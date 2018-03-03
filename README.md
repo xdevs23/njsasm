@@ -4,6 +4,20 @@ This is an interpreter for a custom assembly-like language.
 
 Check the example `test.asmjs`.
 
+### Install
+
+```
+git clone https://github.com/xdevs23/njsasm
+cd njasm
+npm install
+```
+
+### How to use this
+
+```
+node asm.js <filename>
+```
+
 ### License
 
 ```
