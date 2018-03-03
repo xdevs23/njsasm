@@ -1,0 +1,107 @@
+# Just a test program
+# You can do a ton of stuff here
+; This is a comment, too
+
+# A function needs to be defined before it can be called
+# The key word here is BEFORE
+# It really depends on WHEN it is called and not WHERE in the code
+# Look below. bar is defined after foo, but as long as you call foo
+# after bar has been defined, you're good.
+
+function foo
+  println "Hello from function foo"
+  call bar 2 3 4
+endfunction
+
+function bar
+  println "Hello from function bar"
+  printstacktrace
+  call cool
+endfunction
+
+function cool
+  println "Here is the stack:"
+  printstack
+endfunction
+
+function printHello
+  println "Hello World!"
+endfunction
+
+call printHello
+
+# Stuff just starts executing unless it's inside a function
+# You don't need a main function to do this
+  mov rg0 2 ; you can do this of course
+  mov rg2 "yo" ; this will put the string yo into register 2
+  mov rg5 "yas ; same here
+  mov rg4 rg2 ; puts the value of register 2 into register 4
+  mov rg7 999 ; puts 999 in register 7
+  cmp rg7 rg2 rg3 ; there are 10 general-purpose registers
+  cmp rg4 rg2 rg0 ; this compares rg4 against rg2 and puts the result (true/false) in rg0
+  cmp rg2 "yo" rg1 ; you can also compare like this
+  cmp 999 rg7 rg8 ; and like this
+  cmp true rg1 rg6 ; and this
+  cmp rg3 false rg9 ; and this
+
+  # This is how to print something to screen.
+  # You can also use just print to omit the new line
+  println "I'm nice"
+  add rg7 2 rg0 ; add 2 to rg7 and store result in rg0
+  add rg0 22 rg0 ; add 22 to rg0 and store result in rg0
+  mult 200 5000 rg1 ; multiply 200 with 5000 and store result in rg1
+  div 6 2 rg0 ; divide 6 by 2 and store result in rg0
+  div rg0 50 rg0 ; divide rg0 by 50 and store result in rg0
+  mult rg0 3 rg0 ; multiply rg0 with 3 and store result in rg0
+  newreg jsontest ; create a new register (you can use these as variables) with name jsontest
+  mov jsontest {"name":"foo", "age": 23} ; put a JSON object in jsontest. The JSON will be parsed!
+  newreg name ; create register name
+  newreg age ; create register age
+  mov name jsontest.name ; get name from jsontest and put in name. This is how you access stuff from an object
+  mov age jsontest.age ; get age from jsontest and put in age
+
+  # You can also print the content of a register
+  print "Content of the JSON: "
+  printregval jsontest
+
+  println "All the registers afer math and json: "
+  # now watch this...
+  ; this just prints all of the registers with their values
+  printreg
+
+  # Cleanup
+  # Just for you to know how it works
+  
+  delreg name
+  delreg age
+  delreg jsontest
+
+  # You can also delete predefined registers
+  # and recreate them later.
+
+  delreg rg0
+  delreg rg1
+  delreg rg2
+  newreg rg1
+  delreg rg3
+  newreg rg0
+  newreg rg2
+  newreg rg3
+
+  # Trying to delete a register that does not exist does nothing
+
+  delreg nonExistentRegister
+
+  # If you use newreg and the register already exists,
+  # it will be cleared
+
+  newreg rg8
+
+  # Print it again for youo to see the result
+  println "All the registers after newreg/delreg: "
+  printreg
+
+  println "Calling foo"
+  call foo
+  println "Called foo"
+  

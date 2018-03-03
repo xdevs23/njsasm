@@ -1,0 +1,30 @@
+{
+  "name": "njasm",
+  "version": "1.0.0",
+  "description": "Custom Assembly interpreter for Node",
+  "main": "asm.js",
+  "scripts": {
+    "test": "node asm.js test.asmjs"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/xdevs23/njsasm.git"
+  },
+  "keywords": [
+    "assembly",
+    "javascript",
+    "node",
+    "interpreter",
+    "custom",
+    "js"
+  ],
+  "author": "Simao Gomes Viana",
+  "license": "GPL-3.0",
+  "bugs": {
+    "url": "https://github.com/xdevs23/njsasm/issues"
+  },
+  "homepage": "https://github.com/xdevs23/njsasm#readme",
+  "dependencies": {
+    "validator": "^9.4.1"
+  }
+}

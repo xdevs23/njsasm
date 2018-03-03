@@ -1,0 +1,14 @@
+node_modules/
+
+# No idea
+.idea/
+
+*.tmp
+
+# For those macOS users
+
+.DS_Store
+*.DS_Store
+__MACOSX
+*.__MACOSX
+
