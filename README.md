@@ -8,7 +8,7 @@ Check the example `test.asmjs`.
 
 ```
 git clone https://github.com/xdevs23/njsasm
-cd njasm
+cd njsasm
 npm install
 ```
 
