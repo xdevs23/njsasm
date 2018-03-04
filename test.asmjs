@@ -112,6 +112,8 @@ lb count10loop ; define label
   delreg age
   delreg jsontest
   delreg i
+  delreg inctest
+  delreg dectest
 
   # You can also delete predefined registers
   # and recreate them later.
