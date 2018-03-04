@@ -53,7 +53,7 @@ async printHello
   mov rg5 "yas ; same here
   mov rg4 rg2 ; puts the value of register 2 into register 4
   mov rg7 999 ; puts 999 in register 7
-  cmp rg7 rg2 rg3 ; there are 10 general-purpose registers
+  cmp rg7 rg2 rg3 ; there are 10 predefined general-purpose registers
   cmp rg4 rg2 rg0 ; this compares rg4 against rg2 and puts the result (true/false) in rg0
   cmp rg2 "yo" rg1 ; you can also compare like this
   cmp 999 rg7 rg8 ; and like this
