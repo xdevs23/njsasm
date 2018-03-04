@@ -148,7 +148,7 @@ lb after20
 
   newreg rg8
 
-  # Print it again for youo to see the result
+  # Print it again for you to see the result
   println "All the registers after newreg/delreg: "
   printreg
 
