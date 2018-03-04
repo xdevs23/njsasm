@@ -77,6 +77,12 @@ call printHello
   newreg age ; create register age
   mov name jsontest.name ; get name from jsontest and put in name. This is how you access stuff from an object
   mov age jsontest.age ; get age from jsontest and put in age
+  newreg inctest
+  newreg dectest
+  mov inctest 22
+  mov dectest 22
+  incr inctest
+  decr dectest 
 
   # You can also print the content of a register
   print "Content of the JSON: "
@@ -86,6 +92,18 @@ call printHello
   # now watch this...
   ; this just prints all of the registers with their values
   printreg
+
+  newreg i
+  mov i 0
+
+lb count10loop ; define label
+  incr i ; increment i
+  ; print the value
+  print "Value: "
+  println i
+  cmp i 10 rg0 ; check if i is 10
+  rev rg0 ; reverse rg0 because we want to check if it is NOT 10
+  jmpcond count10loop rg0 ; do the same thing again if it isn't 10
 
   # Cleanup
   # Just for you to know how it works

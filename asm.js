@@ -22,6 +22,7 @@ const validator = require('validator')
 const util = require('util')
 
 var curLine = 0
+var contLine = 0
 
 function checkArgumentCount(needs, splitline) {
   if (splitline.length !== needs + 1) {
@@ -63,6 +64,8 @@ var registers = {
 
 var functions = {}
 var currentFunction = {name: null, func: null}
+
+var labels = {}
 
 var splitline
 
@@ -278,6 +281,68 @@ function interpretLine(line) {
       checkArgumentCount(1, splitline)
       nicelyPrintObject(getValueFromSrc(splitline[1].trim()))
       break
+    case 'inc':
+    case 'incr':
+    case 'dec':
+    case 'decr':
+      checkArgumentCount(1, splitline)
+      var registerName = splitline[1].trim()
+      var register = getRegister(registerName)
+      if (!validator.isFloat(''+register.value)) {
+        console.error(`Line ${curLine}: Can't ${command} non-numeric register value of ${registerName}`)
+        process.exit(1)
+      }
+      if (command[0] === 'i') {
+        register.value++
+      } else {
+        register.value--
+      }
+      break
+    case 'lb':
+      checkArgumentCount(1, splitline)
+      var labelName = splitline[1].trim()
+      labels[labelName] = {line: curLine, contline: contLine}
+      break
+    case 'jmp':
+      checkArgumentCount(1, splitline)
+      var labelName = splitline[1].trim()
+      var label = labels[labelName]
+      if (label === undefined) {
+        console.error(`Line ${curLine}: There is no label named ${labelName}. Did you define it before calling it?`)
+        process.exit(1)
+      }
+      contLine = label.contline
+      break
+    case 'rev':
+      checkArgumentCount(1, splitline)
+      var register = getRegister(splitline[1].trim())
+      if ((typeof register.value) === 'number') {
+        register.value = (register.value == 0 ? 1 : 0)
+      } else if ((typeof register.value) === 'string') {
+        register.value = register.value.split('').reverse().join('')
+      } else if ((typeof register.value) === 'boolean') {
+        register.value = !register.value
+      } else {
+        register.value = null
+      }
+      break
+    case 'jmpcond':
+      checkArgumentCount(2, splitline)
+      var labelName = splitline[1].trim()
+      var label = labels[labelName]
+      if (label === undefined) {
+        console.error(`Line ${curLine}: There is no label named ${labelName}. Did you define it before calling it?`)
+        process.exit(1)
+      }
+      var val = getRegister(splitline[2].trim()).value
+      if ( ((typeof val === 'number') && val !== 0) ||
+           ((typeof val === 'boolean') && val === true) ||
+           ((typeof val === 'string') && val !== '') ||
+           (Array.isArray(val) && val.length > 0) ||
+           ((typeof val === 'object') && val != {} && val != null)) {
+        contLine = label.contline
+      }
+      break
     default:
       console.error(`Line ${curLine}: Unknown instruction/command ${command}`)
       process.exit(1)
@@ -291,7 +356,9 @@ var lineReader = require('readline').createInterface({
   input: require('fs').createReadStream(filename)
 })
 
-lineReader.on('line', function (line) {
+var content = []
+
+lineReader.on('line', (line) => {
   curLine++
   var trimmedline = line.trim()
   if (trimmedline.length == 0) {
@@ -305,5 +372,16 @@ lineReader.on('line', function (line) {
       trimmedline = trimmedline.substring(0, indexOfSemicolon).trim()
     }
   }
-  interpretLine(trimmedline)
+  content.push({line: trimmedline, lineNum: curLine})
+})
+
+
+lineReader.on('close', () => {
+  (async () => {
+    for (contLine = 1; contLine <= content.length; contLine++) {
+      var l = content[contLine - 1]
+      curLine = l.lineNum
+      interpretLine(l.line)
+    }
+  })()
 })
