@@ -1,5 +1,5 @@
 {
-  "name": "njasm",
+  "name": "njsasm",
   "version": "1.0.0",
   "description": "Custom Assembly interpreter for Node",
   "main": "asm.js",
