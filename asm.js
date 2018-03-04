@@ -360,7 +360,7 @@ function interpretLine(line) {
         }
       }
       process.exit(0)
-      break 
+      break
     default:
       console.error(`Line ${curLine}: Unknown instruction/command ${command}`)
       process.exit(1)
