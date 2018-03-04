@@ -20,11 +20,8 @@
 # You can do a ton of stuff here
 ; This is a comment, too
 
-# A function needs to be defined before it can be called
-# The key word here is BEFORE
-# It really depends on WHEN it is called and not WHERE in the code
-# Look below. bar is defined after foo, but as long as you call foo
-# after bar has been defined, you're good.
+# You can define functions anywhere you want (except inside functions)
+# and run them from anywhere
 
 function foo
   println "Hello from function foo"
