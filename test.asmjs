@@ -47,6 +47,7 @@ function printHello
 endfunction
 
 call printHello
+async printHello
 
 # Stuff just starts executing unless it's inside a function
 # You don't need a main function to do this
@@ -138,6 +139,10 @@ lb after20
   newreg rg0
   newreg rg2
   newreg rg3
+
+  println "Sleeping for 2 seconds"
+  sleep 2000
+  println "Slept."
 
   # Trying to delete a register that does not exist does nothing
 

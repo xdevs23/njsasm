@@ -18,12 +18,29 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+if (process.argv.length < 3) {
+  console.error("Please specify the file")
+  process.exit(1)
+}
+
+var filename = process.argv[2]
+
 const validator = require('validator')
 const util = require('util')
+const events = require('events')
+const { spawn } = require('child_process')
 
 var curLine = 0
 var contLine = 0
 var preprocessing = true
+var subprocesses = 0
+var emitter = new events.EventEmitter()
+
+async function syncSleep(ms) {
+  await ((ms) => {
+    return new Promise(resolve => setTimeout(resolve, ms))
+  })(ms)
+}
 
 function checkArgumentCount(needs, splitline) {
   if (splitline.length !== needs + 1) {
@@ -158,16 +175,12 @@ function getArgsForMath(splitline) {
 
 var stack = []
 
-if (process.argv.length < 3) {
-  console.error("Please specify the file")
-  process.exit(1)
-}
-
-function interpretLine(line) {
-  if (currentFunction.name !== null) {
+async function interpretLine(line) {
+  if (preprocessing && currentFunction.name !== null) {
     if (line.startsWith("endfunction")) {
-      functions[currentFunction.name] = currentFunction.func
+      functions[currentFunction.name] = {func: currentFunction.func, lineNum: currentFunction.lineNum}
       currentFunction.name = currentFunction.func = null
+      currentFunction.lineNum = 0
       return
     }
     currentFunction.func.push(line)
@@ -244,6 +257,7 @@ function interpretLine(line) {
       }
       break
     case 'function':
+      if (!preprocessing) break
       if (currentFunction.name !== null) {
         console.error(`Line ${curLine}: Functions can't be nested. End function ${currentFunction.name} first`)
         process.exit(1)
@@ -251,22 +265,47 @@ function interpretLine(line) {
       checkArgumentCount(1, splitline)
       currentFunction.name = splitline[1].trim()
       currentFunction.func = []
+      currentFunction.lineNum = contLine
       break
     case 'call':
+    case 'async':
       checkArgumentCountAtLeast(1, splitline)
       var funcName = splitline[1].trim()
-      var func = functions[funcName]
+      var func = functions[funcName].func
       if (func === undefined) {
         console.error(`Line ${curLine}: Function ${funcName} not defined. ` +
                       `Make sure it is defined before this call instruction happens.`)
         process.exit(1)
       }
       var parameters = splitline.slice(2)
-      stack.push({name: funcName, callingLine: curLine, parameters: parameters})
-      func.forEach((funcline) => {
-        interpretLine(funcline)
-      })
-      stack.pop()
+      if (command[0] === 'c') {
+        stack.push({name: funcName, callingLine: curLine, parameters: parameters})
+        func.forEach((funcline) => {
+          interpretLine(funcline)
+        })
+        stack.pop()
+      } else {
+        subprocesses++
+        (async () => {
+        const proc = spawn(process.argv[0], [process.argv[1], filename, funcName])
+
+        proc.stdout.on('data', (data) => {
+          process.stdout.write(data)
+        })
+
+        proc.stderr.on('data', (data) => {
+          process.stderr.write(data)
+        })
+
+        proc.on('close', (code) => {
+          if (code !== 0) {
+            console.error(`Asynchronous function call to ${funcName} exited with code ${code}`)
+            process.exit(code)
+          }
+          subprocesses--
+        })
+        })()
+      }
       break
     case 'printstack':
       nicelyPrintObject(stack)
@@ -300,7 +339,6 @@ function interpretLine(line) {
       }
       break
     case 'lb':
-      if (!preprocessing) break
       checkArgumentCount(1, splitline)
       var labelName = splitline[1].trim()
       labels[labelName] = {line: curLine, contline: contLine}
@@ -361,14 +399,20 @@ function interpretLine(line) {
       }
       process.exit(0)
       break
+    case 'sleep':
+      checkArgumentCount(1, splitline)
+      if (!validator.isInt(splitline[1])) {
+        console.error(`Line ${curLine}: Can't sleep, ${splitline[1]} is not a number. Specify it in milliseconds`)
+        process.exit(1)
+      }
+      await syncSleep(Number.parseInt(splitline[1]))
+      break
     default:
       console.error(`Line ${curLine}: Unknown instruction/command ${command}`)
       process.exit(1)
       break
   }
 }
-
-var filename = process.argv[2]
 
 var lineReader = require('readline').createInterface({
   input: require('fs').createReadStream(filename)
@@ -393,23 +437,68 @@ lineReader.on('line', (line) => {
   content.push({line: trimmedline, lineNum: curLine})
 })
 
+emitter.on('line', (line) => {
+  interpretLine(line)
+})
+
+function queueLine(line) {
+  emitter.emit('line', line)
+}
 
 lineReader.on('close', () => {
   (async () => {
-    // Register labels first
+    var isInFunction = false
+    emitter.on('process', () => {
+      // TODO
+    })
+    // Register labels and functions first
     for (var i = 0; i < content.length; i++) {
       var l = content[i]
       if (l.line.startsWith('lb ')) {
-        contLine = i + 1;
+        contLine = i + 1
         curLine = l.lineNum
-        interpretLine(l.line)
+        await interpretLine(l.line)
+      } else if (l.line.startsWith('function') || currentFunction.name !== null ||
+                 l.line.startsWith('endfunction')) {
+        contLine = i + 1
+        curLine = l.lineNum
+        await interpretLine(l.line)
       }
     }
+    emitter.emit('process')
     preprocessing = false
-    for (contLine = 1; contLine <= content.length; contLine++) {
-      var l = content[contLine - 1]
-      curLine = l.lineNum
-      interpretLine(l.line)
-    }
+    await (async () => {
+      if (process.argv.length >= 4) {
+        await interpretLine(`call ${process.argv[3]}`)
+        process.exit(0)
+      } else {
+        var inFunction = false
+        for (contLine = 1; contLine <= content.length; contLine++) {
+          var l = content[contLine - 1]
+          if (l.line.startsWith('endfunction')) {
+            inFunction = false
+            continue
+          }
+          if (inFunction) continue
+          if (l.line.startsWith('function')) {
+            inFunction = true
+            continue
+          }
+          curLine = l.lineNum
+          await interpretLine(l.line)
+        }
+      }
+    })()
   })()
+  if (subprocesses !== 0) {
+    console.error(`\nNJSASM: Waiting for ${subprocesses} asynchronous function calls to complete`)
+    var waitFunc = () => {
+      if (subprocesses !== 0) {
+        setTimeout(waitFunc, 50)
+      }
+    }
+    setTimeout(waitFunc, 50)
+  }
 })
+
+
