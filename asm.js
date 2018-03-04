@@ -23,6 +23,7 @@ const util = require('util')
 
 var curLine = 0
 var contLine = 0
+var preprocessing = true
 
 function checkArgumentCount(needs, splitline) {
   if (splitline.length !== needs + 1) {
@@ -299,6 +300,7 @@ function interpretLine(line) {
       }
       break
     case 'lb':
+      if (!preprocessing) break
       checkArgumentCount(1, splitline)
       var labelName = splitline[1].trim()
       labels[labelName] = {line: curLine, contline: contLine}
@@ -308,7 +310,7 @@ function interpretLine(line) {
       var labelName = splitline[1].trim()
       var label = labels[labelName]
       if (label === undefined) {
-        console.error(`Line ${curLine}: There is no label named ${labelName}. Did you define it before calling it?`)
+        console.error(`Line ${curLine}: There is no label named ${labelName}. Add the label first.`)
         process.exit(1)
       }
       contLine = label.contline
@@ -331,7 +333,7 @@ function interpretLine(line) {
       var labelName = splitline[1].trim()
       var label = labels[labelName]
       if (label === undefined) {
-        console.error(`Line ${curLine}: There is no label named ${labelName}. Did you define it before calling it?`)
+        console.error(`Line ${curLine}: There is no label named ${labelName}. Add the label first.`)
         process.exit(1)
       }
       var val = getRegister(splitline[2].trim()).value
@@ -343,6 +345,22 @@ function interpretLine(line) {
         contLine = label.contline
       }
       break
+    case 'endfunction':
+      // Looks like we jumped into a function...
+      break
+    case 'exit':
+    case 'quit':
+      if (splitline.length > 1) {
+        var exitcodeSpecified = getValueFromSrc(splitline[1].trim())
+        if ((typeof exitcodeSpecified) === 'number' && exitcodeSpecified >= 0 && exitcodeSpecified <= 255) {
+          process.exit(Number.parseInt(''+exitcodeSpecified))
+        } else {
+          console.log("NJSASM: Program exited. Result:")
+          nicelyPrintObject(exitcodeSpecified)
+        }
+      }
+      process.exit(0)
+      break 
     default:
       console.error(`Line ${curLine}: Unknown instruction/command ${command}`)
       process.exit(1)
@@ -378,6 +396,16 @@ lineReader.on('line', (line) => {
 
 lineReader.on('close', () => {
   (async () => {
+    // Register labels first
+    for (var i = 0; i < content.length; i++) {
+      var l = content[i]
+      if (l.line.startsWith('lb ')) {
+        contLine = i + 1;
+        curLine = l.lineNum
+        interpretLine(l.line)
+      }
+    }
+    preprocessing = false
     for (contLine = 1; contLine <= content.length; contLine++) {
       var l = content[contLine - 1]
       curLine = l.lineNum

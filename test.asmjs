@@ -105,6 +105,18 @@ lb count10loop ; define label
   rev rg0 ; reverse rg0 because we want to check if it is NOT 10
   jmpcond count10loop rg0 ; do the same thing again if it isn't 10
 
+  add i 10 i
+  cmp i 20 rg0
+  jmpcond is20 rg0 
+  jmp isnot20
+lb is20
+  println "Is 20!"
+  jmp after20
+lb isnot20  
+  println "Is not 20!"
+  exit i
+lb after20
+
   # Cleanup
   # Just for you to know how it works
   
