@@ -4,6 +4,10 @@ This is an interpreter for a custom assembly-like language.
 
 Check the example `test.asmjs`.
 
+This is still WIP so don't expect anything from it.
+Not expecting anything from it includes not expecting
+this project to be ever finished.
+
 ### Install
 
 ```
